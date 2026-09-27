@@ -34,22 +34,27 @@ with tab1:
         if st.button("Run Prediction"):
             try:
                 model = load_prediction_model(MODEL_PATH)
-                predictions = []
-                
-                # Assume threshold 0.5 for now, or read from optimal threshold config
                 optimal_threshold = 0.5 
                 
-                for _, row in df.iterrows():
-                    # We might need to drop 'Class' if it exists in the uploaded CSV
-                    if 'Class' in row.index:
-                        trans = pd.DataFrame([row.drop('Class')])
-                    else:
-                        trans = pd.DataFrame([row])
-                        
-                    pred_res = predict_transaction(trans, model, threshold=optimal_threshold)
-                    predictions.append(pred_res)
-                    
-                df_res = pd.DataFrame(predictions)
+                # Batch prediction
+                X_input = df.drop(columns=['Class']) if 'Class' in df.columns else df.copy()
+                
+                # Predict probabilities
+                probs = model.predict_proba(X_input)[:, 1]
+                
+                # Vectorized condition check
+                predictions = (probs >= optimal_threshold).astype(int)
+                
+                # Map risk levels
+                risk_levels = np.where(probs >= optimal_threshold, "High", 
+                                       np.where(probs >= 0.2, "Medium", "Low"))
+                
+                df_res = pd.DataFrame({
+                    "prediction": predictions,
+                    "fraud_probability": probs,
+                    "risk_level": risk_levels
+                })
+                
                 df_final = pd.concat([df.reset_index(drop=True), df_res], axis=1)
                 
                 st.write("Prediction Results:")
