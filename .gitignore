@@ -12,7 +12,7 @@ env.bak/
 venv.bak/
 
 .ipynb_checkpoints
-outputs/models/*.pkl
+
 outputs/results/*.csv
 outputs/figures/*.png
 
