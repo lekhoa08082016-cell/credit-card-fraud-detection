@@ -1,0 +1,21 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+.ipynb_checkpoints
+outputs/models/*.pkl
+outputs/results/*.csv
+outputs/figures/*.png
+
+# Do not ignore data folder itself but ignore csv files inside
+data/*.csv
+!data/.gitkeep
