@@ -31,23 +31,31 @@ def generate_shap_explanations(model, X_train, X_test, feature_names, save_dir):
     plt.close()
     
 def generate_local_explanation(explainer, shap_values, X_sample, feature_names, index, save_path):
-    # Depending on model type and SHAP version
-    # Not fully implemented without knowing exact SHAP shapes, but conceptually:
+    plt.figure(figsize=(10, 6))
     
-    plt.figure()
+    if isinstance(shap_values, list): # TreeExplainer with classification (e.g. Random Forest)
+        base_value = explainer.expected_value[1] if isinstance(explainer.expected_value, list) else explainer.expected_value
+        values = shap_values[1][index]
+    elif hasattr(shap_values, 'values'): # SHAP Explanation object
+        base_value = shap_values[index].base_values
+        values = shap_values[index].values
+    else: # Numpy array (e.g., XGBoost binary)
+        base_value = explainer.expected_value
+        if isinstance(base_value, (list, np.ndarray)):
+            base_value = base_value[0]
+        values = shap_values[index]
+        
+    exp = shap.Explanation(
+        values=values, 
+        base_values=base_value, 
+        data=X_sample.iloc[index].values, 
+        feature_names=list(feature_names)
+    )
     
-    if isinstance(shap_values, list): # TreeExplainer with classification
-        shap.plots.waterfall(shap.Explanation(values=shap_values[1][index], 
-                                              base_values=explainer.expected_value[1], 
-                                              data=X_sample.iloc[index], 
-                                              feature_names=feature_names),
-                             show=False)
-    elif hasattr(shap_values, 'values'):
-        # For new SHAP api
-        shap.plots.waterfall(shap_values[index], show=False)
+    shap.plots.waterfall(exp, show=False)
     
     plt.tight_layout()
     if save_path:
         Path(save_path).parent.mkdir(parents=True, exist_ok=True)
-        plt.savefig(save_path)
+        plt.savefig(save_path, bbox_inches='tight')
     plt.close()
